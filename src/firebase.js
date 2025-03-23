@@ -1,11 +1,20 @@
 // firebase.js
 require('dotenv').config();
 const admin = require('firebase-admin');
-const serviceAccount = require('./serviceAccountKey.json'); // asegúrate de tener este archivo y no subirlo a GitHub
+
+let serviceAccount;
+
+if (process.env.FIREBASE_CONFIG) {
+  // Parsear desde variable de entorno (Render)
+  serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
+} else {
+  // Usar archivo local en desarrollo
+  serviceAccount = require('./serviceAccountKey.json');
+}
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: process.env.FIREBASE_DB // opcional si usas Realtime Database
+  databaseURL: process.env.FIREBASE_DB // opcional: usa esta variable si la tienes
 });
 
 const db = admin.firestore();
