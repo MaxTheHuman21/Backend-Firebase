@@ -15,12 +15,11 @@ app.set('view engine', '.hbs');
 
 app.use(morgan("dev"));
 // Request Body con datos enviados desde el formulario html
-app.use(express.json())
+app.use(express.json());
 app.use(express.urlencoded({ extended: true })); 
 
-app.use(require("./routes/index"));
-
 app.use('/api/auth', require('./routes/auth'));
+app.use('/', require("./routes/index"));
 
 //Publicar una carpeta estatica que cualquiera pueda solicitar (se haga publica)
 app.use(express.static(path.join(__dirname, 'public')));
