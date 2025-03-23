@@ -1,0 +1,45 @@
+<h1>Contacts</h1>
+
+<ul> 
+    {{#each contacts}}
+    <li>
+        <h3>{{nombre}} {{apellido}}</h3>
+        <p>{{email}}</p>
+        <p>{{telefono}}</p>
+
+    <a href="/delete-contact/{{id}}">Delete</a>
+
+    <a href="/edit-contact/{{id}}">Edit</a>
+
+    </li>
+    {{/each}}
+</ul>
+
+<form action="/new-contact" method="POST">
+    <div>
+        <label for="nombre">Nombre: </label>
+        <input type="text" name="nombre" placeholder="nombre", id="nombre">
+        value = "{{contact.nombre}}"
+    </div>
+
+    <div>
+        <label for="apellido">Apellido: </label>
+        <input type="text" name="apellido" placeholder="apellido", id="apellido">
+    
+        value = "{{contact.apellido}}"
+    </div>
+
+    <div>
+        <label for="email">E-mail: </label>
+        <input type="text" name="email" placeholder="email", id="email">
+        value = "{{contact.email}}"
+    </div>
+
+    <div>
+        <label for="telefono">Telefono: </label>
+        <input type="text" name="telefono" placeholder="telefono", id="telefono">
+        value = "{{contact.telefono}}"
+    </div>
+
+    <button type="submit">Enviar</button>
+</form>
