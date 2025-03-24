@@ -46,4 +46,39 @@ router.get('/profile', async (req, res) => {
   }
 });
 
+//LOGIN DE USUARIO
+const axios = require('axios');
+
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password)
+    return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+
+  try {
+    const apiKey = process.env.FIREBASE_API_KEY;
+    const response = await axios.post(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
+      {
+        email,
+        password,
+        returnSecureToken: true
+      }
+    );
+
+    const { idToken, refreshToken, expiresIn, localId } = response.data;
+
+    res.json({
+      message: 'Login exitoso',
+      uid: localId,
+      idToken,
+      refreshToken,
+      expiresIn
+    });
+  } catch (err) {
+    res.status(401).json({ error: 'Credenciales inválidas o usuario no existe' });
+  }
+});
+
+
 module.exports = router;
