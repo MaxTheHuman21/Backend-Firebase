@@ -1,7 +1,9 @@
 const express = require("express");
 const morgan = require("morgan");
-const path = require('path')
-const exphbs = require("express-handlebars")
+const path = require('path');
+const exphbs = require("express-handlebars");
+app.use('/api/notifications', require('./routes/notifications'));
+
 
 const app = express ();
 

@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { auth, db } = require('../firebase');
+const apiKey = process.env.FIREBASE_API_KEY;
 
 // REGISTRO
 router.post('/register', async (req, res) => {
@@ -79,6 +80,30 @@ router.post('/login', async (req, res) => {
     res.status(401).json({ error: 'Credenciales inválidas o usuario no existe' });
   }
 });
+
+
+router.post('/reset-password', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) return res.status(400).json({ error: 'Email es requerido' });
+
+  try {
+    const apiKey = process.env.FIREBASE_API_KEY;
+
+    await axios.post(
+      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`,
+      {
+        requestType: 'PASSWORD_RESET',
+        email
+      }
+    );
+
+    res.json({ message: 'Correo de restablecimiento enviado con éxito' });
+  } catch (err) {
+    res.status(400).json({ error: 'No se pudo enviar el correo de recuperación' });
+  }
+});
+
 
 
 module.exports = router;
