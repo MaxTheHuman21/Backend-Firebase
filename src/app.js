@@ -2,10 +2,8 @@ const express = require("express");
 const morgan = require("morgan");
 const path = require('path');
 const exphbs = require("express-handlebars");
-app.use('/api/notifications', require('./routes/notifications'));
 
-
-const app = express ();
+const app = express();
 
 app.set('views', path.join(__dirname, 'views'));
 app.engine('.hbs', exphbs.engine({ 
@@ -15,15 +13,18 @@ app.engine('.hbs', exphbs.engine({
 }));
 app.set('view engine', '.hbs');
 
+// 🧠 Middlewares primero
 app.use(morgan("dev"));
-// Request Body con datos enviados desde el formulario html
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); 
 
+// ✅ Luego las rutas
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/transportes', require('./routes/transportes'));
 app.use('/', require("./routes/index"));
 
-//Publicar una carpeta estatica que cualquiera pueda solicitar (se haga publica)
+// Archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
 module.exports = app;
