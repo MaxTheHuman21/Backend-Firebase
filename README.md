@@ -185,5 +185,5 @@ Este proyecto se despliega automáticamente en [Render](https://render.com) cada
 
 ## ✨ Desarrollado por
 
-**MaxTheHuman21** y equipo R-UAM  
+**MaxTheHuman21** y equipo R-UAM
 🔗 GitHub: [github.com/MaxTheHuman21](https://github.com/MaxTheHuman21)

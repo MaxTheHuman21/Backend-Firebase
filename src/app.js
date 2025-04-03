@@ -13,16 +13,17 @@ app.engine('.hbs', exphbs.engine({
 }));
 app.set('view engine', '.hbs');
 
-// 🧠 Middlewares primero
+// Middlewares
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); 
 
-// ✅ Luego las rutas
+// Rutas
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/transportes', require('./routes/transportes'));
 app.use('/', require("./routes/index"));
+app.use('/api/admin', require('./routes/admin'));
 
 // Archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
