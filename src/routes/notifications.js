@@ -3,6 +3,7 @@ const router = express.Router();
 const { db } = require('../firebase');
 const {messaging} = require('../firebase')
 
+//Guardado de token
 router.post('/token', async (req, res) => {
   const { uid, fcmToken, deviceId } = req.body;
 
