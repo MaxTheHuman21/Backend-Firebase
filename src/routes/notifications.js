@@ -4,23 +4,28 @@ const { db } = require('../firebase');
 const {messaging} = require('../firebase')
 
 router.post('/token', async (req, res) => {
-  const { uid, fcmToken } = req.body;
+  const { uid, fcmToken, deviceId } = req.body;
 
-  if (!uid || !fcmToken) {
-    return res.status(400).json({ error: 'UID y fcmToken son requeridos' });
+  if (!uid || !fcmToken || !deviceId) {
+    return res.status(400).json({ error: 'uid, fcmToken y deviceId son requeridos' });
   }
 
   try {
-    await db.collection('users').doc(uid).update({
+    const docId = `${uid}_${deviceId}`; // ID único por usuario y dispositivo
+
+    await db.collection('tokens').doc(docId).set({
+      uid,
       fcmToken,
-      tokenUpdatedAt: new Date()
+      deviceId,
+      updatedAt: new Date()
     });
 
-    res.json({ message: 'Token guardado correctamente' });
+    res.json({ message: 'Token guardado correctamente con deviceId' });
   } catch (err) {
     res.status(500).json({ error: 'Error al guardar el token' });
   }
 });
+
 
 // Enviar notificación push
 router.post('/send', async (req, res) => {

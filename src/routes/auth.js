@@ -7,7 +7,7 @@ const axios = require('axios');
 const apiKey = process.env.FIREBASE_API_KEY;
 
 // Lista de roles permitidos
-const allowedRoles = ['estudiante', 'profesor', 'admin'];
+const allowedRoles = ['estudiante', 'profesor', 'admin', 'trabajador'];
 
 // REGISTRO
 router.post('/register', async (req, res) => {
