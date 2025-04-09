@@ -6,19 +6,34 @@ const axios = require('axios');
 
 const apiKey = process.env.FIREBASE_API_KEY;
 
-// Lista de roles permitidos
-const allowedRoles = ['estudiante', 'profesor', 'admin', 'trabajador'];
+// ID válidos para tipoUsuario
+const allowedTipoUsuarioIds = [1, 2, 3, 4]; // 1=admin, 2=alumno, 3=docente, 4=trabajador
 
-// REGISTRO
+// ✅ REGISTRO DE USUARIO
 router.post('/register', async (req, res) => {
-  const { email, password, name, role } = req.body;
+  const {
+    email,
+    password,
+    name,
+    enrollmentId,
+    estadoId,
+    imagen,
+    tipoUsuarioId
+  } = req.body;
 
-  if (!email || !password || !name || !role) {
+  if (
+    !email ||
+    !password ||
+    !name ||
+    !enrollmentId ||
+    estadoId === undefined ||
+    tipoUsuarioId === undefined
+  ) {
     return res.status(400).json({ error: 'Faltan campos requeridos' });
   }
 
-  if (!allowedRoles.includes(role)) {
-    return res.status(400).json({ error: 'Rol no permitido' });
+  if (!allowedTipoUsuarioIds.includes(tipoUsuarioId)) {
+    return res.status(400).json({ error: 'tipoUsuarioId no permitido' });
   }
 
   try {
@@ -30,10 +45,14 @@ router.post('/register', async (req, res) => {
 
     const uid = userRecord.uid;
 
-    await db.collection('users').doc(uid).set({
-      name,
+    await db.collection('usuarios').doc(uid).set({
+      uid,
       email,
-      role,
+      nombreCompleto: name,
+      enrollmentId,
+      estadoId,
+      imagen: imagen || '',
+      tipoUsuarioId,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
@@ -44,7 +63,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// VERIFICAR TOKEN Y OBTENER PERFIL
+// ✅ OBTENER PERFIL DEL USUARIO ACTUAL
 router.get('/profile', async (req, res) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) return res.status(401).json({ error: 'Token no proporcionado' });
@@ -52,7 +71,7 @@ router.get('/profile', async (req, res) => {
   try {
     const decoded = await auth.verifyIdToken(token);
     const uid = decoded.uid;
-    const userDoc = await db.collection('users').doc(uid).get();
+    const userDoc = await db.collection('usuarios').doc(uid).get();
 
     if (!userDoc.exists) return res.status(404).json({ error: 'Usuario no encontrado' });
 
@@ -63,7 +82,7 @@ router.get('/profile', async (req, res) => {
   }
 });
 
-// LOGIN DE USUARIO
+// ✅ LOGIN DE USUARIO
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -98,11 +117,11 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// RESET DE CONTRASEÑA
+// ✅ RESET DE CONTRASEÑA
 router.post('/reset-password', async (req, res) => {
   const { email } = req.body;
 
-  if (!email) return res.status(400).json({ error: 'Email es requerido' });
+  if (!email) return res.status(400).json({ error: 'Correo es requerido' });
 
   try {
     await axios.post(
