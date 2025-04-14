@@ -1,27 +1,30 @@
 const { auth, db } = require('../firebase');
 
-const verificarAdmin = async (req, res, next) => {
+module.exports = async function verificarAdmin(req, res, next) {
   const token = req.headers.authorization?.split('Bearer ')[1];
 
-  if (!token) return res.status(401).json({ error: 'Token no proporcionado' });
+  if (!token) {
+    return res.status(401).json({ error: 'Token no proporcionado' });
+  }
 
   try {
     const decoded = await auth.verifyIdToken(token);
-    const uid = decoded.uid;
+    const userDoc = await db.collection('usuarios').doc(decoded.uid).get();
 
-    const userDoc = await db.collection('users').doc(uid).get();
-    const userData = userDoc.data();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
 
-    if (!userData || userData.role !== 'administrador') {
+    const user = userDoc.data();
+
+    if (user.tipoUsuarioId !== 1) {
       return res.status(403).json({ error: 'Acceso denegado: no eres administrador' });
     }
 
-    req.uid = uid;
-    req.user = userData;
+    req.user = user;
     next();
   } catch (err) {
-    return res.status(401).json({ error: 'Token inválido' });
+    console.error('Error verificando token:', err.message);
+    res.status(401).json({ error: 'Token inválido' });
   }
-};
-
-module.exports = verificarAdmin;
+}
