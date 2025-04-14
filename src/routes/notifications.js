@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { db } = require('../firebase');
-const {messaging} = require('../firebase')
+const { db, messaging } = require('../firebase');
+const admin = require('firebase-admin');
 
-//Guardado de token
+// ✅ Guardar token de dispositivo con UID y deviceId
 router.post('/token', async (req, res) => {
   const { uid, fcmToken, deviceId } = req.body;
 
@@ -12,7 +12,12 @@ router.post('/token', async (req, res) => {
   }
 
   try {
-    const docId = `${uid}_${deviceId}`; // ID único por usuario y dispositivo
+    const userDoc = await db.collection('usuarios').doc(uid).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: 'El usuario no existe' });
+    }
+
+    const docId = `${uid}_${deviceId}`;
 
     await db.collection('tokens').doc(docId).set({
       uid,
@@ -23,26 +28,23 @@ router.post('/token', async (req, res) => {
 
     res.json({ message: 'Token guardado correctamente con deviceId' });
   } catch (err) {
-    res.status(500).json({ error: 'Error al guardar el token' });
+    res.status(500).json({ error: 'Error al guardar el token', details: err.message });
   }
 });
 
 
-// Enviar notificación push
+// ✅ Enviar notificación básica a un solo token
 router.post('/send', async (req, res) => {
   const { token, title, body } = req.body;
 
   if (!token || !title || !body) {
-    return res.status(400).json({ error: 'Faltan campos requeridos' });
+    return res.status(400).json({ error: 'Faltan campos requeridos (token, title, body)' });
   }
 
   try {
     await messaging.send({
       token,
-      notification: {
-        title,
-        body
-      }
+      notification: { title, body }
     });
 
     res.json({ message: 'Notificación enviada correctamente' });
@@ -52,7 +54,8 @@ router.post('/send', async (req, res) => {
   }
 });
 
-// Enviar notificación a todos los dispositivos de un usuario
+
+// ✅ Enviar notificación a todos los dispositivos de un usuario
 router.post('/send-to-user', async (req, res) => {
   const { uid, title, body } = req.body;
 
@@ -71,15 +74,10 @@ router.post('/send-to-user', async (req, res) => {
 
     const mensajes = tokens.map(token => ({
       token,
-      notification: {
-        title,
-        body
-      }
+      notification: { title, body }
     }));
 
-    const results = await Promise.allSettled(
-      mensajes.map(msg => messaging.send(msg))
-    );
+    const results = await Promise.allSettled(mensajes.map(msg => messaging.send(msg)));
 
     const enviados = results.filter(r => r.status === 'fulfilled').length;
     const fallidos = results.filter(r => r.status === 'rejected').length;
@@ -89,17 +87,17 @@ router.post('/send-to-user', async (req, res) => {
       resultados: results
     });
   } catch (err) {
-    console.error('Error al enviar notificaciones:', err);
-    res.status(500).json({ error: 'Error al enviar notificaciones' });
+    res.status(500).json({ error: 'Error al enviar notificaciones', details: err.message });
   }
 });
 
-// Enviar notificación a múltiples usuarios
+
+// ✅ Enviar notificación a múltiples usuarios por sus uids
 router.post('/send-to-multiple', async (req, res) => {
   const { uids, title, body } = req.body;
 
   if (!uids || !Array.isArray(uids) || !title || !body) {
-    return res.status(400).json({ error: 'uids, title y body son requeridos' });
+    return res.status(400).json({ error: 'uids (array), title y body son requeridos' });
   }
 
   try {
@@ -123,9 +121,7 @@ router.post('/send-to-multiple', async (req, res) => {
       notification: { title, body }
     }));
 
-    const resultados = await Promise.allSettled(
-      mensajes.map(msg => messaging.send(msg))
-    );
+    const resultados = await Promise.allSettled(mensajes.map(msg => messaging.send(msg)));
 
     const enviados = resultados.filter(r => r.status === 'fulfilled').length;
     const fallidos = resultados.filter(r => r.status === 'rejected').length;
@@ -134,57 +130,49 @@ router.post('/send-to-multiple', async (req, res) => {
       message: `Notificación enviada a ${enviados} dispositivos. ${fallidos} fallaron.`,
       resultados
     });
-
   } catch (err) {
-    console.error('Error al enviar notificación:', err);
-    res.status(500).json({ error: 'Error al enviar la notificación' });
+    res.status(500).json({ error: 'Error al enviar notificaciones', details: err.message });
   }
 });
 
-// Enviar notificación a todos los usuarios con cierto rol
-router.post('/send-to-role', async (req, res) => {
-  const { rol, title, body } = req.body;
 
-  if (!rol || !title || !body) {
-    return res.status(400).json({ error: 'rol, title y body son requeridos' });
+// ✅ Enviar notificación a todos los usuarios con un tipoUsuarioId
+router.post('/send-to-role', async (req, res) => {
+  const { tipoUsuarioId, title, body } = req.body;
+
+  if (tipoUsuarioId === undefined || !title || !body) {
+    return res.status(400).json({ error: 'tipoUsuarioId, title y body son requeridos' });
   }
 
   try {
-    // 1. Obtener todos los usuarios con ese rol
-    const userSnapshot = await db.collection('usuarios').where('rol', '==', rol).get();
+    const userSnapshot = await db.collection('usuarios').where('tipoUsuarioId', '==', tipoUsuarioId).get();
 
     if (userSnapshot.empty) {
-      return res.status(404).json({ error: `No se encontraron usuarios con rol ${rol}` });
+      return res.status(404).json({ error: `No se encontraron usuarios con tipoUsuarioId ${tipoUsuarioId}` });
     }
 
-    // 2. Obtener tokens de todos esos usuarios
     let tokens = [];
 
     for (const doc of userSnapshot.docs) {
-      const userId = doc.id;
+      const uid = doc.id;
 
-      const tokenSnapshot = await db.collection('tokens').where('uid', '==', userId).get();
+      const tokenSnapshot = await db.collection('tokens').where('uid', '==', uid).get();
       tokenSnapshot.forEach(tokenDoc => {
         const tokenData = tokenDoc.data();
-        if (tokenData.fcmToken) {
-          tokens.push(tokenData.fcmToken);
-        }
+        if (tokenData.fcmToken) tokens.push(tokenData.fcmToken);
       });
     }
 
     if (tokens.length === 0) {
-      return res.status(404).json({ error: 'No se encontraron tokens para este rol' });
+      return res.status(404).json({ error: 'No se encontraron tokens para este tipo de usuario' });
     }
 
-    // 3. Enviar notificaciones
     const mensajes = tokens.map(token => ({
       token,
       notification: { title, body }
     }));
 
-    const resultados = await Promise.allSettled(
-      mensajes.map(msg => messaging.send(msg))
-    );
+    const resultados = await Promise.allSettled(mensajes.map(msg => messaging.send(msg)));
 
     const enviados = resultados.filter(r => r.status === 'fulfilled').length;
     const fallidos = resultados.filter(r => r.status === 'rejected').length;
@@ -193,12 +181,32 @@ router.post('/send-to-role', async (req, res) => {
       message: `Notificación enviada a ${enviados} dispositivos. ${fallidos} fallaron.`,
       resultados
     });
-
   } catch (err) {
-    console.error('Error al enviar notificación:', err);
-    res.status(500).json({ error: 'Error al enviar la notificación' });
+    res.status(500).json({ error: 'Error al enviar notificación', details: err.message });
   }
 });
 
+
+// ✅ Enviar notificación con `data` personalizada
+router.post('/send-notification', async (req, res) => {
+  const { token, title, body, data } = req.body;
+
+  if (!token || !title || !body) {
+    return res.status(400).json({ error: 'Faltan campos requeridos (token, title, body)' });
+  }
+
+  const message = {
+    token,
+    notification: { title, body },
+    data: data || {} // objeto opcional para lógica personalizada
+  };
+
+  try {
+    const response = await admin.messaging().send(message);
+    res.json({ message: 'Notificación enviada con éxito', response });
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo enviar la notificación', details: err.message });
+  }
+});
 
 module.exports = router;
