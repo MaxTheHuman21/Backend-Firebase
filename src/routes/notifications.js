@@ -209,4 +209,50 @@ router.post('/send-notification', async (req, res) => {
   }
 });
 
+router.post('/send-movil', async (req, res) => {
+  const { conductorId, rutaId, tipo } = req.body;
+
+  if (!conductorId || !rutaId || !tipo) {
+    return res.status(400).json({ error: 'conductorId, rutaId y tipo son requeridos' });
+  }
+
+  try {
+    const snapshot = await db.collection('tokens').get();
+    if (snapshot.empty) {
+      return res.status(404).json({ error: 'No hay tokens registrados' });
+    }
+
+    const tokens = snapshot.docs.map(doc => doc.data().fcmToken);
+
+    const mensajes = tokens.map(token => ({
+      token,
+      data: {
+        title: "RUAM",
+        description: "Este es un mensaje de prueba desde Firebase",
+        conductorId,
+        rutaId,
+        tipo
+      },
+      android: {
+        priority: "high"
+      }
+    }));
+
+    const resultados = await Promise.allSettled(mensajes.map(msg => messaging.send(msg)));
+
+    const enviados = resultados.filter(r => r.status === 'fulfilled').length;
+    const fallidos = resultados.filter(r => r.status === 'rejected').length;
+
+    res.json({
+      message: `Notificación enviada a ${enviados} dispositivos. ${fallidos} fallaron.`,
+      resultados
+    });
+
+  } catch (err) {
+    console.error('Error al enviar notificaciones móviles:', err.message);
+    res.status(500).json({ error: 'Error al enviar notificaciones móviles' });
+  }
+});
+
+
 module.exports = router;

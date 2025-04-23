@@ -13,6 +13,12 @@ app.engine('.hbs', exphbs.engine({
 }));
 app.set('view engine', '.hbs');
 
+const cors = require('cors');
+app.use(cors({
+  origin: '*', // O el dominio de tu frontend si quieres restringir más
+}));
+
+
 // Middlewares
 app.use(morgan("dev"));
 app.use(express.json());
