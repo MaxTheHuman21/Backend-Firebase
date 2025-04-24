@@ -125,7 +125,7 @@ router.post('/reset-password', async (req, res) => {
 
   try {
     await axios.post(
-      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`,
+      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${process.env.FIREBASE_API_KEY}`,
       {
         requestType: 'PASSWORD_RESET',
         email
