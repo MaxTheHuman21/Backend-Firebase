@@ -17,7 +17,7 @@ module.exports = async function verificarAdmin(req, res, next) {
 
     const user = userDoc.data();
 
-    if (user.tipoUsuarioId !== 1) {
+    if (user.tipoUsuarioId !== 4) {
       return res.status(403).json({ error: 'Acceso denegado: no eres administrador' });
     }
 
