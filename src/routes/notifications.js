@@ -188,32 +188,12 @@ router.post('/send-to-role', async (req, res) => {
 
 
 // ✅ Enviar notificación con `data` personalizada
-router.post('/send-notification', async (req, res) => {
-  const { token, title, body, data } = req.body;
-
-  if (!token || !title || !body) {
-    return res.status(400).json({ error: 'Faltan campos requeridos (token, title, body)' });
-  }
-
-  const message = {
-    token,
-    notification: { title, body },
-    data: data || {} // objeto opcional para lógica personalizada
-  };
-
-  try {
-    const response = await admin.messaging().send(message);
-    res.json({ message: 'Notificación enviada con éxito', response });
-  } catch (err) {
-    res.status(500).json({ error: 'No se pudo enviar la notificación', details: err.message });
-  }
-});
-
 router.post('/send-movil', async (req, res) => {
-  const { conductorId, rutaId, tipo } = req.body;
+  // Ahora recibes también transporteId
+  const { conductorId, rutaId, tipo, transporteId } = req.body;
 
-  if (!conductorId || !rutaId || !tipo) {
-    return res.status(400).json({ error: 'conductorId, rutaId y tipo son requeridos' });
+  if (!conductorId || !rutaId || !tipo || !transporteId) {
+    return res.status(400).json({ error: 'conductorId, rutaId, tipo y transporteId son requeridos' });
   }
 
   try {
@@ -224,6 +204,7 @@ router.post('/send-movil', async (req, res) => {
 
     const tokens = snapshot.docs.map(doc => doc.data().fcmToken);
 
+    // ¡Aquí ya va el parámetro transporteId en el data!
     const mensajes = tokens.map(token => ({
       token,
       data: {
@@ -231,7 +212,8 @@ router.post('/send-movil', async (req, res) => {
         description: "Este es un mensaje de prueba desde Firebase",
         conductorId,
         rutaId,
-        tipo
+        tipo,
+        transporteId
       },
       android: {
         priority: "high"
@@ -253,6 +235,7 @@ router.post('/send-movil', async (req, res) => {
     res.status(500).json({ error: 'Error al enviar notificaciones móviles' });
   }
 });
+
 
 
 module.exports = router;
