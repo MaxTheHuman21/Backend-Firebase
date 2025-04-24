@@ -38,31 +38,22 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Actualizar datos de un conductor
-router.put('/:conductorId', async (req, res) => {
+// Obtener un solo conductor por su conductorId
+router.get('/:conductorId', async (req, res) => {
   const { conductorId } = req.params;
-  const { nombreCompleto, fechaNacimiento, fotoUrl, estadoId } = req.body;
 
   try {
-    const ref = db.collection('conductores').doc(conductorId);
-    const doc = await ref.get();
+    const doc = await db.collection('conductores').doc(conductorId).get();
 
     if (!doc.exists) {
       return res.status(404).json({ error: 'Conductor no encontrado' });
     }
 
-    await ref.update({
-      nombreCompleto,
-      fechaNacimiento,
-      fotoUrl,
-      estadoId,
-      actualizadoEn: new Date()
-    });
-
-    res.json({ message: 'Conductor actualizado correctamente' });
+    res.json(doc.data());
   } catch (err) {
-    res.status(500).json({ error: 'Error al actualizar el conductor', detalles: err.message });
+    res.status(500).json({ error: 'Error al obtener el conductor', detalles: err.message });
   }
 });
+
 
 module.exports = router;
