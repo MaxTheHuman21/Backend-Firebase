@@ -7,7 +7,7 @@ const axios = require('axios');
 const apiKey = process.env.FIREBASE_API_KEY;
 
 // ID válidos para tipoUsuario
-const allowedTipoUsuarioIds = [1, 2, 3, 4]; // 1=admin, 2=alumno, 3=docente, 4=trabajador
+const allowedTipoUsuarioIds = [1, 2, 3, 4]; // 1=alumno, 2=trabajador, 3=conductor, 4=admin
 
 // ✅ REGISTRO DE USUARIO
 router.post('/register', async (req, res) => {
@@ -49,7 +49,7 @@ router.post('/register', async (req, res) => {
       uid,
       email,
       nombreCompleto: name,
-      enrollmentId,
+      matricula: enrollmentId,
       estadoId,
       imagen: imagen || '',
       tipoUsuarioId,
