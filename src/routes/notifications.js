@@ -232,7 +232,7 @@ router.post('/send-movil', async (req, res) => {
       resultados
     });
 
-  } catch (err) {
+  } catch (err) { 
     console.error('Error al enviar notificaciones móviles:', err.message);
     res.status(500).json({ error: 'Error al enviar notificaciones móviles' });
   }
