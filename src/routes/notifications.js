@@ -190,10 +190,11 @@ router.post('/send-to-role', async (req, res) => {
 // ✅ Enviar notificación con `data` personalizada
 router.post('/send-movil', async (req, res) => {
   // Ahora recibes también transporteId
-  const { conductorId, rutaId, tipo, transporteId } = req.body;
+  const { conductorId, rutaId, tipo, transporteId, time } = req.body;
+  const timestamp = Date.now();
 
-  if (!conductorId || !rutaId || !tipo || !transporteId) {
-    return res.status(400).json({ error: 'conductorId, rutaId, tipo y transporteId son requeridos' });
+  if (!conductorId || !rutaId || !tipo || !transporteId || !time) {
+    return res.status(400).json({ error: 'conductorId, rutaId, tipo, transporteId y time son requeridos' });
   }
 
   try {
@@ -213,7 +214,8 @@ router.post('/send-movil', async (req, res) => {
         conductorId,
         rutaId,
         tipo,
-        transporteId
+        transporteId,
+        timestamp: timestamp.toString()
       },
       android: {
         priority: "high"
@@ -235,6 +237,28 @@ router.post('/send-movil', async (req, res) => {
     res.status(500).json({ error: 'Error al enviar notificaciones móviles' });
   }
 });
+
+router.delete('/unsubscribe', async (req, res) => {
+  const { fcmToken } = req.body;
+
+  if (!fcmToken) {
+    return res.status(400).json({ error: 'fcmToken es requerido' });
+  }
+
+  try {
+    const snapshot = await db.collection('tokens').where('fcmToken', '==', fcmToken).get();
+    if (snapshot.empty) {
+      return res.status(404).json({ error: 'Token no encontrado' });
+    }
+    for (const doc of snapshot.docs) {
+      await doc.ref.delete();
+    }
+    res.json({ message: 'Token eliminado correctamente. Usuario desuscrito de notificaciones.' });
+  } catch (err) {
+    res.status(500).json({ error: 'No se pudo eliminar el token', details: err.message });
+  }
+});
+
 
 
 
